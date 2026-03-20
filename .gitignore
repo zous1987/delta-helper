@@ -1,0 +1,11 @@
+node_modules
+.next
+*.log
+.DS_Store
+database/*.db
+database/*.db-shm
+database/*.db-wal
+*.zip
+*.tar.gz
+.vscode
+.idea

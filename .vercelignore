@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+*.log
+.DS_Store
+database/*.db
+database/*.db-shm
+database/*.db-wal
+tmp/
+backup/
+memory/
+*.zip
+*.tar.gz
