@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { analyzeHardwareConfigMock as analyzeHardwareConfig, predictGamePerformanceMock as predictGamePerformance } from '../lib/qwen'
+import { analyzeHardwareConfig, predictGamePerformance } from '../lib/qwen'
 import { cases } from '../lib/supabase'
 
 export default function Home() {
