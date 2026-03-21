@@ -39,7 +39,7 @@ interface Case {
 }
 
 export default function CasesPage() {
-  const [cases, setCases] = useState<Case[]>([])
+  const [caseList, setCaseList] = useState<Case[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -53,7 +53,7 @@ export default function CasesPage() {
   const fetchCases = async () => {
     try {
       const result = await cases.findAll(100)
-      setCases(result || [])
+      setCaseList(result || [])
     } catch (err) {
       console.error('Failed to fetch cases:', err)
     } finally {
@@ -70,7 +70,7 @@ export default function CasesPage() {
     fetchCases() // 刷新列表
   }
 
-  const filteredCases = cases.filter((caseItem) => {
+  const filteredCases = caseList.filter((caseItem) => {
     const matchesFilter = filter === 'all' || caseItem.serviceStatus === filter
     const matchesSearch = searchTerm === '' || 
       caseItem.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -232,24 +232,24 @@ export default function CasesPage() {
           <h2 className="text-xl font-bold text-gray-800 mb-4">📈 统计概览</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-3xl font-bold text-indigo-600">{cases.length}</div>
+              <div className="text-3xl font-bold text-indigo-600">{caseList.length}</div>
               <div className="text-sm text-gray-600">总案例数</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-green-600">
-                {cases.filter(c => c.serviceStatus === 'completed').length}
+                {caseList.filter(c => c.serviceStatus === 'completed').length}
               </div>
               <div className="text-sm text-gray-600">已完成</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-yellow-600">
-                {cases.filter(c => c.serviceStatus === 'pending').length}
+                {caseList.filter(c => c.serviceStatus === 'pending').length}
               </div>
               <div className="text-sm text-gray-600">待处理</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-red-600">
-                {cases.filter(c => c.afterSalesMark).length}
+                {caseList.filter(c => c.afterSalesMark).length}
               </div>
               <div className="text-sm text-gray-600">售后</div>
             </div>
