@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { cases } from '../lib/supabase'
 
 interface CaseData {
-  _id: string
-  id?: string
+  id: string
+  _id?: string
   customerName: string
   customer_name?: string
   config: any
@@ -43,7 +43,7 @@ export default function UpdateEffectModal({ caseData, onClose, onSuccess }: Upda
     setError('')
 
     try {
-      await cases.update(caseData._id, {
+      await cases.update(caseData.id || caseData._id, {
         actual_fps: actualFps,
         actual_quality: actualQuality,
         debug_content: debugContent,

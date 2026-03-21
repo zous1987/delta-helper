@@ -129,7 +129,7 @@ export default function CasesPage() {
         ) : (
           <div className="space-y-4">
             {filteredCases.map((caseItem) => (
-              <div key={caseItem._id} className="bg-white rounded-xl shadow-lg p-6">
+              <div key={caseItem.id || caseItem._id} className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex flex-wrap justify-between items-start gap-4">
                   {/* 客户信息 */}
                   <div className="flex-1 min-w-[200px]">
