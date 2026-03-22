@@ -14,7 +14,7 @@ const supabase = supabaseUrl && supabaseKey
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   if (!supabase) {
     return NextResponse.json({ success: false, error: '数据库配置错误' }, { status: 500 })
@@ -22,7 +22,8 @@ export async function PUT(
 
   try {
     const body = await request.json()
-    const caseId = params.id
+    const { id } = await context.params
+    const caseId = id
 
     // 更新案例
     const { data, error } = await supabase
@@ -53,14 +54,15 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   if (!supabase) {
     return NextResponse.json({ success: false, error: '数据库配置错误' }, { status: 500 })
   }
 
   try {
-    const caseId = params.id
+    const { id } = await context.params
+    const caseId = id
 
     const { error } = await supabase
       .from('cases')
