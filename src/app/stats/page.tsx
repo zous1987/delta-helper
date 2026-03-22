@@ -1,36 +1,33 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { cases } from '../../lib/supabase'
 
-interface Case {
-  id?: string
-  _id?: string
-  customerName?: string
-  customer_name?: string
-  config?: any
-  prediction?: any
-  actualFps?: string
-  actual_fps?: string
-  serviceStatus?: string
-  service_status?: string
-  afterSalesMark?: boolean
-  after_sales_mark?: number | boolean
-  createdBy?: string
-  created_by?: string
-  createdAt?: string
-  created_at?: string
-  debugger_name?: string
-  debuggerName?: string
-  debug_content?: string
-  cpu?: string
-  gpu?: string
+interface Stats {
+  total: number
+  completed: number
+  pending: number
+  afterSales: number
+  afterSalesRate: string
+  avgFps: number
+  serviceRepRanking: Array<{
+    name: string
+    total: number
+    completed: number
+    afterSales: number
+    afterSalesRate: string
+  }>
+  debuggerRanking: Array<{
+    name: string
+    total: number
+    afterSales: number
+    afterSalesRate: string
+  }>
 }
 
 export default function StatsPage() {
-  const [cases, setCases] = useState<Case[]>([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchStats()
@@ -38,77 +35,30 @@ export default function StatsPage() {
 
   const fetchStats = async () => {
     try {
-      const allCases = await cases.findAll(1000)
-      setCases(allCases || [])
-      calculateStats(allCases || [])
-    } catch (err) {
-      console.error('Failed to fetch stats:', err)
+      console.log('📊 开始获取统计数据...')
+      
+      const response = await fetch('/api/stats')
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || '请求失败')
+      }
+      
+      const result = await response.json()
+      console.log('✅ 统计数据获取成功')
+      console.log('📈 总案例数:', result.stats?.total)
+      
+      if (result.success && result.stats) {
+        setStats(result.stats)
+      } else {
+        setError('数据格式错误')
+      }
+    } catch (err: any) {
+      console.error('❌ 统计异常:', err)
+      setError(`加载失败：${err.message}`)
     } finally {
       setLoading(false)
     }
-  }
-
-  const calculateStats = (allCases: Case[]) => {
-    const total = allCases.length
-    const completed = allCases.filter(c => c.serviceStatus === 'completed').length
-    const pending = allCases.filter(c => c.serviceStatus === 'pending').length
-    const afterSales = allCases.filter(c => c.afterSalesMark).length
-    
-    // 售后率
-    const afterSalesRate = total > 0 ? ((afterSales / total) * 100).toFixed(2) : '0.00'
-    
-    // 客服排行
-    const byServiceRep = allCases.reduce((acc, caseItem) => {
-      const name = caseItem.createdBy || '未知'
-      if (!acc[name]) acc[name] = { total: 0, completed: 0, afterSales: 0 }
-      acc[name].total++
-      if (caseItem.serviceStatus === 'completed') acc[name].completed++
-      if (caseItem.afterSalesMark) acc[name].afterSales++
-      return acc
-    }, {} as any)
-
-    // 转换为数组并排序
-    const serviceRepRanking = Object.entries(byServiceRep)
-      .map(([name, data]: [string, any]) => ({
-        name,
-        ...data,
-        afterSalesRate: data.total > 0 ? ((data.afterSales / data.total) * 100).toFixed(2) : '0.00'
-      }))
-      .sort((a, b) => b.total - a.total)
-
-    // 调试师售后排行（只统计有调试师的案例）
-    const byDebugger = allCases
-      .filter(c => c.debugger_name || c.debuggerName)
-      .reduce((acc, caseItem) => {
-        const name = caseItem.debugger_name || caseItem.debuggerName || '未知'
-        if (!acc[name]) acc[name] = { total: 0, afterSales: 0, debugContent: [] }
-        acc[name].total++
-        // 兼容数据库字段名（下划线）和前端字段名（驼峰）
-        if (caseItem.after_sales_mark || caseItem.afterSalesMark) {
-          acc[name].afterSales++
-        }
-        if (caseItem.debug_content) acc[name].debugContent.push(caseItem.debug_content)
-        return acc
-      }, {} as any)
-
-    // 转换为数组并排序（按售后单数降序）
-    const debuggerRanking = Object.entries(byDebugger)
-      .map(([name, data]: [string, any]) => ({
-        name,
-        ...data,
-        afterSalesRate: data.total > 0 ? ((data.afterSales / data.total) * 100).toFixed(2) : '0.00'
-      }))
-      .sort((a, b) => b.afterSales - a.afterSales)
-
-    setStats({
-      total,
-      completed,
-      pending,
-      afterSales,
-      afterSalesRate,
-      serviceRepRanking,
-      debuggerRanking
-    })
   }
 
   if (loading) {
@@ -116,6 +66,21 @@ export default function StatsPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
         <div className="text-center py-12">
           <div className="text-2xl text-gray-500">加载统计中...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-4xl font-bold text-center text-indigo-900 mb-8">
+            📊 统计报表
+          </h1>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            ❌ {error}
+          </div>
         </div>
       </div>
     )
@@ -180,7 +145,7 @@ export default function StatsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.serviceRepRanking.map((rep: any, index: number) => (
+                  {stats.serviceRepRanking.map((rep, index) => (
                     <tr key={rep.name} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
                         {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
@@ -226,7 +191,7 @@ export default function StatsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.debuggerRanking.map((debugger_item: any, index: number) => (
+                  {stats.debuggerRanking.map((debugger_item, index) => (
                     <tr key={debugger_item.name} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
                         {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
