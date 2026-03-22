@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { cases } from '../lib/supabase'
 
 interface CaseData {
   id: string
@@ -24,8 +23,8 @@ interface UpdateEffectModalProps {
 }
 
 export default function UpdateEffectModal({ caseData, onClose, onSuccess }: UpdateEffectModalProps) {
-  const [actualFps, setActualFps] = useState(caseData.actualFps || '')
-  const [actualQuality, setActualQuality] = useState(caseData.actualQuality || '')
+  const [actualFps, setActualFps] = useState(caseData.actualFps || caseData.actual_fps || '')
+  const [actualQuality, setActualQuality] = useState(caseData.actualQuality || caseData.actual_quality || '')
   const [debugContent, setDebugContent] = useState('')
   const [debuggerName, setDebuggerName] = useState('')
   const [afterSalesMark, setAfterSalesMark] = useState(caseData.serviceStatus === 'after-sales')
@@ -43,15 +42,26 @@ export default function UpdateEffectModal({ caseData, onClose, onSuccess }: Upda
     setError('')
 
     try {
-      await cases.update(caseData.id || caseData._id, {
-        actual_fps: actualFps,
-        actual_quality: actualQuality,
-        debug_content: debugContent,
-        debugger_name: debuggerName,
-        after_sales_mark: afterSalesMark ? 1 : 0,
-        after_sales_reason: afterSalesReason,
-        service_status: afterSalesMark ? 'after-sales' : 'completed'
+      const response = await fetch(`/api/cases/${caseData.id || caseData._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          actual_fps: actualFps,
+          actual_quality: actualQuality,
+          debug_content: debugContent,
+          debugger_name: debuggerName,
+          after_sales_mark: afterSalesMark,
+          after_sales_reason: afterSalesReason,
+          service_status: afterSalesMark ? 'after-sales' : 'completed'
+        })
       })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || '更新失败')
+      }
 
       alert('✅ 实际效果已更新！')
       onSuccess()
@@ -76,12 +86,12 @@ export default function UpdateEffectModal({ caseData, onClose, onSuccess }: Upda
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500">客户：</span>
-              <span className="font-medium text-gray-800">{caseData.customerName}</span>
+              <span className="font-medium text-gray-800">{caseData.customerName || caseData.customer_name || '未命名'}</span>
             </div>
             <div>
               <span className="text-gray-500">配置：</span>
               <span className="font-medium text-gray-800">
-                {caseData.config?.cpu} + {caseData.config?.gpu}
+                {caseData.config?.cpu || caseData.cpu || 'N/A'} + {caseData.config?.gpu || caseData.gpu || 'N/A'}
               </span>
             </div>
           </div>
@@ -98,10 +108,10 @@ export default function UpdateEffectModal({ caseData, onClose, onSuccess }: Upda
                 type="number"
                 value={actualFps}
                 onChange={(e) => setActualFps(e.target.value)}
-                placeholder="如：105"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="如：144"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               />
-              <span className="absolute right-4 top-3 text-gray-500">FPS</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">FPS</span>
             </div>
           </div>
 
@@ -109,17 +119,26 @@ export default function UpdateEffectModal({ caseData, onClose, onSuccess }: Upda
             <label className="block text-sm font-medium text-gray-700 mb-2">
               实际画质
             </label>
-            <select
+            <input
+              type="text"
               value={actualQuality}
               onChange={(e) => setActualQuality(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 font-medium"
-            >
-              <option value="">请选择</option>
-              <option value="低">低</option>
-              <option value="中">中</option>
-              <option value="高">高</option>
-              <option value="极致">极致</option>
-            </select>
+              placeholder="如：低、中、高"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              调试师姓名
+            </label>
+            <input
+              type="text"
+              value={debuggerName}
+              onChange={(e) => setDebuggerName(e.target.value)}
+              placeholder="用于统计调试师售后率"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
 
           <div>
@@ -129,49 +148,33 @@ export default function UpdateEffectModal({ caseData, onClose, onSuccess }: Upda
             <textarea
               value={debugContent}
               onChange={(e) => setDebugContent(e.target.value)}
-              placeholder="如：更新显卡驱动、调整游戏设置、清理系统垃圾等"
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 font-medium"
+              placeholder="记录了哪些调试操作..."
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              调试师 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={debuggerName}
-              onChange={(e) => setDebuggerName(e.target.value)}
-              placeholder="如：李工、王师傅"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 font-medium"
-            />
-          </div>
-
-          <div className="border-t pt-4">
-            <label className="flex items-center space-x-3 mb-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <label className="flex items-center space-x-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={afterSalesMark}
                 onChange={(e) => setAfterSalesMark(e.target.checked)}
-                className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                className="w-5 h-5 text-red-600 rounded focus:ring-red-500"
               />
-              <span className="text-sm font-medium text-gray-700">标记为售后</span>
-            </label>
-
-            {afterSalesMark && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  售后原因
-                </label>
-                <input
-                  type="text"
-                  value={afterSalesReason}
-                  onChange={(e) => setAfterSalesReason(e.target.value)}
-                  placeholder="如：客户不满意帧率、游戏闪退等"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+                <div className="font-medium text-red-800">标记为售后</div>
+                <div className="text-sm text-red-600">如果客户回来售后，请勾选此项</div>
               </div>
+            </label>
+            {afterSalesMark && (
+              <input
+                type="text"
+                value={afterSalesReason}
+                onChange={(e) => setAfterSalesReason(e.target.value)}
+                placeholder="售后原因..."
+                className="w-full mt-3 px-4 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500"
+              />
             )}
           </div>
 
@@ -180,23 +183,24 @@ export default function UpdateEffectModal({ caseData, onClose, onSuccess }: Upda
               ❌ {error}
             </div>
           )}
-        </div>
 
-        {/* 操作按钮 */}
-        <div className="flex space-x-4 mt-8">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition"
-          >
-            取消
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? '保存中...' : '✅ 保存'}
-          </button>
+          {/* 操作按钮 */}
+          <div className="flex space-x-4 pt-4">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition disabled:opacity-50"
+            >
+              取消
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !actualFps.trim()}
+              className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? '保存中...' : '💾 保存'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
