@@ -93,7 +93,6 @@ export default function Home() {
         storage: config.storage,
         monitor: config.monitor,
         device_type: deviceType,
-        model_recommendation: prediction.model_recommendation,
         predicted_fps: prediction.predicted_fps,
         can_run: prediction.can_run,
         needs_optimization: prediction.needs_optimization,
@@ -342,7 +341,7 @@ export default function Home() {
                   {prediction.predicted_fps || 'N/A'}
                 </div>
                 <div className="text-lg text-gray-600">
-                  推荐模型：<span className="font-bold text-indigo-600">{prediction.model_recommendation || 'N/A'}</span>
+                  设备类型：<span className="font-bold text-indigo-600">{deviceType}</span>
                 </div>
                 <div className="text-sm text-gray-500 mt-2">
                   设备类型：{deviceType}
