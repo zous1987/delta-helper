@@ -9,3 +9,4 @@ database/*.db-wal
 *.tar.gz
 .vscode
 .idea
+.env*

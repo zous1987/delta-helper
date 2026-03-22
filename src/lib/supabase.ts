@@ -1,10 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+// 获取环境变量（兼容多种命名）
+const getSupabaseUrl = () => {
+  if (typeof process === 'undefined') return undefined
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || 
+         process.env.SUPABASE_URL || 
+         undefined
+}
+
+const getSupabaseKey = () => {
+  if (typeof process === 'undefined') return undefined
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+         process.env.SUPABASE_ANON_KEY || 
+         undefined
+}
+
+const supabaseUrl = getSupabaseUrl()
+const supabaseAnonKey = getSupabaseKey()
 
 // 只在有真实配置时才创建客户端
-export const supabase = supabaseUrl && supabaseUrl !== 'https://placeholder.supabase.co'
+export const supabase = supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
@@ -36,30 +51,39 @@ export const cases = {
 
   // 查询所有案例
   async findAll(limit = 100) {
+    if (!supabase) return []
     const { data, error } = await supabase
       .from('cases')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit)
     
-    if (error) throw error
+    if (error) {
+      console.error('查询所有案例失败:', error)
+      return []
+    }
     return data || []
   },
 
   // 查询单个案例
   async findById(id: string) {
+    if (!supabase) return null
     const { data, error } = await supabase
       .from('cases')
       .select('*')
       .eq('id', id)
       .single()
     
-    if (error) throw error
+    if (error) {
+      console.error('查询案例失败:', error)
+      return null
+    }
     return data
   },
 
   // 更新案例
   async update(id: string, data: any) {
+    if (!supabase) return null
     const { data: result, error } = await supabase
       .from('cases')
       .update({ ...data, updated_at: new Date().toISOString() })
@@ -67,20 +91,45 @@ export const cases = {
       .select()
       .single()
     
-    if (error) throw error
+    if (error) {
+      console.error('更新案例失败:', error)
+      return null
+    }
     return result
   },
 
-  // 查询相似案例
+  // 查询相似案例（修复版）
   async findSimilar(cpu: string, gpu: string, limit = 5) {
+    if (!supabase) return []
+    try {
+      // 构建模糊查询条件
+      const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .filter('cpu', 'ilike', `%${cpu}%`)
+        .or(`gpu.ilike.%${gpu}%`)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      
+      if (error) {
+        console.warn('查询相似案例失败:', error)
+        return []
+      }
+      return data || []
+    } catch (err) {
+      console.warn('查询相似案例异常:', err)
+      return []
+    }
+  },
+
+  // 搜索案例（新增）
+  async search(query: string, limit = 20) {
     if (!supabase) return []
     try {
       const { data, error } = await supabase
         .from('cases')
         .select('*')
-        .or(`cpu.eq.${cpu},gpu.eq.${gpu}`)
-        .eq('service_status', 'completed')
-        .not('actual_fps', 'is', null)
+        .or(`customer_name.ilike.%${query}%,cpu.ilike.%${query}%,gpu.ilike.%${query}%`)
         .order('created_at', { ascending: false })
         .limit(limit)
       
@@ -91,7 +140,7 @@ export const cases = {
     }
   },
 
-  // 统计
+  // 统计（修复版）
   async getStats() {
     if (!supabase) {
       return {
@@ -99,29 +148,59 @@ export const cases = {
         completed: 0,
         pending: 0,
         afterSales: 0,
-        afterSalesRate: '0.00'
+        afterSalesRate: '0.00',
+        avgFps: 0
       }
     }
     try {
-      const { count: total } = await supabase.from('cases').select('*', { count: 'exact', head: true })
-      const { count: completed } = await supabase.from('cases').select('*', { count: 'exact', head: true }).eq('service_status', 'completed')
-      const { count: pending } = await supabase.from('cases').select('*', { count: 'exact', head: true }).eq('service_status', 'pending')
-      const { count: afterSales } = await supabase.from('cases').select('*', { count: 'exact', head: true }).eq('after_sales_mark', true)
+      // 获取所有数据
+      const { data: allCases, error: totalError } = await supabase
+        .from('cases')
+        .select('id, service_status, after_sales_mark, actual_fps')
+      
+      if (totalError) {
+        console.error('获取统计失败:', totalError)
+        return {
+          total: 0,
+          completed: 0,
+          pending: 0,
+          afterSales: 0,
+          afterSalesRate: '0.00',
+          avgFps: 0
+        }
+      }
+
+      const total = allCases?.length || 0
+      const completed = allCases?.filter(c => c.service_status === 'completed').length || 0
+      const pending = allCases?.filter(c => c.service_status === 'pending').length || 0
+      const afterSales = allCases?.filter(c => c.after_sales_mark === true).length || 0
+      
+      // 计算平均 FPS
+      const fpsValues = allCases
+        ?.filter(c => c.actual_fps && !isNaN(parseInt(c.actual_fps)))
+        .map(c => parseInt(c.actual_fps)) || []
+      
+      const avgFps = fpsValues.length > 0 
+        ? Math.round(fpsValues.reduce((a, b) => a + b, 0) / fpsValues.length)
+        : 0
 
       return {
-        total: total || 0,
-        completed: completed || 0,
-        pending: pending || 0,
-        afterSales: afterSales || 0,
-        afterSalesRate: total && total > 0 ? ((afterSales! / total) * 100).toFixed(2) : '0.00'
+        total,
+        completed,
+        pending,
+        afterSales,
+        afterSalesRate: total > 0 ? ((afterSales / total) * 100).toFixed(2) : '0.00',
+        avgFps
       }
-    } catch {
+    } catch (err) {
+      console.error('统计异常:', err)
       return {
         total: 0,
         completed: 0,
         pending: 0,
         afterSales: 0,
-        afterSalesRate: '0.00'
+        afterSalesRate: '0.00',
+        avgFps: 0
       }
     }
   }

@@ -11,6 +11,7 @@ export default function Home() {
   const [customerSource, setCustomerSource] = useState('')
   
   // 配置信息
+  const [deviceType, setDeviceType] = useState<'台式机' | '笔记本'>('台式机')
   const [inputText, setInputText] = useState('')
   const [config, setConfig] = useState<any>(null)
   const [prediction, setPrediction] = useState<any>(null)
@@ -53,8 +54,11 @@ export default function Home() {
     setError('')
 
     try {
-      // 1. 先获取预测结果
-      const prediction = await predictGamePerformance(config)
+      // 1. 先获取预测结果（包含设备类型）
+      const prediction = await predictGamePerformance({
+        ...config,
+        deviceType
+      })
       setPrediction(prediction)
 
       // 2. 自动查询相似案例
@@ -88,8 +92,9 @@ export default function Home() {
         ram: config.ram,
         storage: config.storage,
         monitor: config.monitor,
+        device_type: deviceType,
+        model_recommendation: prediction.model_recommendation,
         predicted_fps: prediction.predicted_fps,
-        recommended_quality: prediction.recommended_quality,
         can_run: prediction.can_run,
         needs_optimization: prediction.needs_optimization,
         predicted_reason: prediction.reason,
@@ -101,6 +106,7 @@ export default function Home() {
       setCustomerName('')
       setContactInfo('')
       setCustomerSource('')
+      setDeviceType('台式机')
       setInputText('')
       setConfig(null)
       setPrediction(null)
@@ -118,7 +124,7 @@ export default function Home() {
           🎮 三角洲行动调试助手
         </h1>
         <p className="text-center text-gray-600 mb-8">
-          快速判断客户配置是否可接单 · 预测游戏帧率和画质
+          快速判断客户配置是否可接单 · 预测游戏帧率和模型配置
         </p>
 
         {/* 进度指示 */}
@@ -215,6 +221,54 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-gray-800 mb-6">🔧 硬件配置</h2>
             
             <div className="space-y-4">
+              {/* 设备类型选择 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  设备类型 <span className="text-red-500">*</span>
+                </label>
+                <div className="flex space-x-4">
+                  <label className="flex-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="台式机"
+                      checked={deviceType === '台式机'}
+                      onChange={(e) => setDeviceType(e.target.value as '台式机' | '笔记本')}
+                      className="sr-only"
+                    />
+                    <div className={`p-4 border-2 rounded-lg text-center transition ${
+                      deviceType === '台式机' 
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <div className="text-2xl mb-1">🖥️</div>
+                      <div className="font-medium">台式机</div>
+                    </div>
+                  </label>
+                  <label className="flex-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      value="笔记本"
+                      checked={deviceType === '笔记本'}
+                      onChange={(e) => setDeviceType(e.target.value as '台式机' | '笔记本')}
+                      className="sr-only"
+                    />
+                    <div className={`p-4 border-2 rounded-lg text-center transition ${
+                      deviceType === '笔记本' 
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <div className="text-2xl mb-1">💻</div>
+                      <div className="font-medium">笔记本</div>
+                    </div>
+                  </label>
+                </div>
+                {deviceType === '笔记本' && (
+                  <div className="mt-2 text-sm text-orange-600 bg-orange-50 p-3 rounded">
+                    💡 笔记本性能约为同配置台式机的 70-80%，推荐模型会降低一档
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   客户配置文本 <span className="text-red-500">*</span>
@@ -288,7 +342,10 @@ export default function Home() {
                   {prediction.predicted_fps || 'N/A'}
                 </div>
                 <div className="text-lg text-gray-600">
-                  推荐画质：<span className="font-bold text-indigo-600">{prediction.recommended_quality || 'N/A'}</span>
+                  推荐模型：<span className="font-bold text-indigo-600">{prediction.model_recommendation || 'N/A'}</span>
+                </div>
+                <div className="text-sm text-gray-500 mt-2">
+                  设备类型：{deviceType}
                 </div>
               </div>
 
