@@ -96,7 +96,7 @@ ${config.text}
       const deviceType = config.deviceType || '台式机'
       const monitorInfo = config.monitor || '未提供'
       
-      prompt = `根据以下配置，预测《三角洲行动》游戏的性能表现（乐观估计）：
+      prompt = `根据以下配置，预测《三角洲行动》游戏的性能表现（**保守估计，实事求是**）：
 
 设备类型：${deviceType}
 CPU: ${config.cpu || '未知'}
@@ -108,20 +108,43 @@ GPU: ${config.gpu || '未知'}
 请分析并返回 JSON 格式：
 {
   "model_recommendation": "推荐模型设置（低/中/高/极致）",
-  "predicted_fps": "最高可达帧率，如 最高 144+ FPS 或 90-144 FPS（范围大一点）",
-  "can_run": true/false（是否可以流畅运行）,
+  "predicted_fps": "保守估计帧率范围，如 60-90 FPS",
+  "can_run": true/false（是否可以流畅运行，标准：1080P 低画质 60+ FPS）,
   "needs_optimization": true/false（是否需要调试优化）,
-  "reason": "简要分析理由（50 字以内，需考虑显示器分辨率和刷新率）"
+  "reason": "简要分析理由（50 字以内）"
 }
 
-参考标准（乐观估计）：
-- 流畅运行：1080P 分辨率下 60+ FPS 即可
-- 最高帧率：给出在优化后能达到的最高帧率
-- 模型推荐：根据配置推荐合适的模型设置
-- 需要优化：配置低于推荐要求但高于最低要求
-- 如显示器是 2K/4K 或高刷新率，需在理由中说明对帧率的影响
-- 帧率范围给大一点，给客户信心
-- **笔记本配置需降低一档推荐**（同型号笔记本性能约为台式机 70-80%）`
+**参考标准（保守估计，不要虚高）：**
+
+【极致模型】RTX 4070Ti/4080/4090 + i7-13700K/R9 7900X + 32GB → 4K 144+ FPS
+【高模型】RTX 3060Ti/3070/4060 + i5-12600K/R7 5800X + 16GB → 2K 100+ FPS
+【中模型】RTX 3060/2060/GTX 1660S + i5-10400/R5 5600 + 16GB → 1080P 80+ FPS
+【低模型】GTX 1050Ti/1650 + i3-10100/R3 3100 + 8GB → 1080P 60+ FPS
+
+**无法流畅运行**：
+- GPU 低于 GTX 1050Ti / GTX 1650
+- 内存低于 8GB
+- CPU 过于老旧（如 i3-4150、FX-6300 等 4 代以前）
+
+**笔记本特殊规则**：
+- 同型号笔记本性能约为台式机 70-80%
+- 笔记本 RTX 3060 ≈ 台式机 RTX 3050
+- **必须降低一档推荐**
+
+**判断理由要求**：
+- 明确指出 CPU/GPU 的代数或性能级别
+- 如配置老旧，明确说明"CPU/GPU 性能有限"
+- 考虑显示器分辨率（2K/4K 需更高配置）
+- **不要虚高估计，实事求是**
+
+**示例（老旧配置）**：
+输入：i3-4150, GTX 960, 8GB
+输出：{"model_recommendation": "低", "predicted_fps": "45-60 FPS", "can_run": true, "needs_optimization": true, "reason": "4 代 i3 和 GTX 960 性能有限，仅能在低画质下勉强流畅"}
+
+**示例（中端配置）**：
+输入：i5-12400F, RTX 3060, 16GB
+输出：{"model_recommendation": "中", "predicted_fps": "80-120 FPS", "can_run": true, "needs_optimization": false, "reason": "12 代 i5+3060 性能均衡，1080P 中画质流畅运行"}
+`
     } else {
       return NextResponse.json(
         { error: '不支持的请求类型' },
