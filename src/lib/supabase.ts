@@ -1,15 +1,23 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// 客户端安全地获取环境变量
-// 注意：只有 NEXT_PUBLIC_ 前缀的变量才能在客户端访问
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-// 全局客户端实例（避免重复创建）
+// 全局客户端实例（懒加载，避免构建时初始化）
 let supabaseInstance: SupabaseClient | null = null
 
+/**
+ * 获取 Supabase 客户端（懒加载）
+ * 只在浏览器环境或运行时才初始化
+ */
 export function getSupabaseClient() {
+  // 如果是服务端构建（SSG/SSR），返回 null
+  if (typeof window === 'undefined') {
+    return null
+  }
+  
   if (!supabaseInstance) {
+    // 客户端环境下读取环境变量
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
     // 检查环境变量是否可用
     if (!supabaseUrl || !supabaseAnonKey) {
       console.warn('⚠️ Supabase 环境变量未配置')
@@ -30,7 +38,8 @@ export function getSupabaseClient() {
   return supabaseInstance
 }
 
-export const supabase = getSupabaseClient()
+// 导出 null，避免构建时初始化
+export const supabase = null
 
 // 案例相关操作
 export const cases = {

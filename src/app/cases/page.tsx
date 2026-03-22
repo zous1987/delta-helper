@@ -57,11 +57,13 @@ export default function CasesPage() {
   const fetchCases = async () => {
     try {
       console.log('🔄 开始获取案例列表...')
+      
+      // 懒加载 Supabase 客户端（只在浏览器环境）
       const supabase = getSupabaseClient()
       
       if (!supabase) {
         console.error('❌ Supabase 客户端未初始化')
-        setError('数据库连接失败，请检查环境变量配置')
+        setError('数据库连接失败，请刷新页面重试')
         setLoading(false)
         return
       }
