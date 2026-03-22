@@ -1,27 +1,36 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// 获取环境变量（兼容多种命名）
-const getSupabaseUrl = () => {
-  if (typeof process === 'undefined') return undefined
-  return process.env.NEXT_PUBLIC_SUPABASE_URL || 
-         process.env.SUPABASE_URL || 
-         undefined
+// 客户端安全地获取环境变量
+// 注意：只有 NEXT_PUBLIC_ 前缀的变量才能在客户端访问
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// 全局客户端实例（避免重复创建）
+let supabaseInstance: SupabaseClient | null = null
+
+export function getSupabaseClient() {
+  if (!supabaseInstance) {
+    // 检查环境变量是否可用
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('⚠️ Supabase 环境变量未配置')
+      console.warn('URL:', supabaseUrl ? '✅' : '❌')
+      console.warn('Key:', supabaseAnonKey ? '✅' : '❌')
+      return null
+    }
+    
+    // 验证 URL 格式
+    if (!supabaseUrl.startsWith('http')) {
+      console.error('❌ Supabase URL 格式错误:', supabaseUrl)
+      return null
+    }
+    
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
+    console.log('✅ Supabase 客户端初始化成功')
+  }
+  return supabaseInstance
 }
 
-const getSupabaseKey = () => {
-  if (typeof process === 'undefined') return undefined
-  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
-         process.env.SUPABASE_ANON_KEY || 
-         undefined
-}
-
-const supabaseUrl = getSupabaseUrl()
-const supabaseAnonKey = getSupabaseKey()
-
-// 只在有真实配置时才创建客户端
-export const supabase = supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
+export const supabase = getSupabaseClient()
 
 // 案例相关操作
 export const cases = {
