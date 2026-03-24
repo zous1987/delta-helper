@@ -14,9 +14,9 @@ export function getSupabaseClient() {
   }
   
   if (!supabaseInstance) {
-    // 客户端环境下读取环境变量
-    const supabaseUrl = process.env.SUPABASE_URL
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+    // 客户端环境下读取环境变量（Next.js 要求浏览器端变量必须有 NEXT_PUBLIC_ 前缀）
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     
     // 检查环境变量是否可用
     if (!supabaseUrl || !supabaseAnonKey) {
