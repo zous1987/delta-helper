@@ -15,20 +15,22 @@ export function getSupabaseClient() {
   
   if (!supabaseInstance) {
     // 客户端环境下读取环境变量（Next.js 要求浏览器端变量必须有 NEXT_PUBLIC_ 前缀）
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    // 同时支持两种变量名，兼容 Railway 配置
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim()
+    const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '').trim()
     
     // 检查环境变量是否可用
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('⚠️ Supabase 环境变量未配置')
-      console.warn('URL:', supabaseUrl ? '✅' : '❌')
-      console.warn('Key:', supabaseAnonKey ? '✅' : '❌')
+      console.error('❌ Supabase 环境变量未配置')
+      console.error('URL:', supabaseUrl ? '✅ 已配置' : '❌ 未配置', supabaseUrl)
+      console.error('Key:', supabaseAnonKey ? '✅ 已配置' : '❌ 未配置')
       return null
     }
     
-    // 验证 URL 格式
-    if (!supabaseUrl.startsWith('http')) {
-      console.error('❌ Supabase URL 格式错误:', supabaseUrl)
+    // 验证 URL 格式（去除空格后检查）
+    const cleanUrl = supabaseUrl.trim()
+    if (!cleanUrl.startsWith('http')) {
+      console.error('❌ Supabase URL 格式错误:', JSON.stringify(supabaseUrl))
       return null
     }
     
