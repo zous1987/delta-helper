@@ -15,8 +15,8 @@ export function getSupabaseClient() {
   
   if (!supabaseInstance) {
     // 客户端环境下读取环境变量
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
     
     // 检查环境变量是否可用
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -45,9 +45,10 @@ export const supabase = null
 export const cases = {
   // 创建案例
   async create(data: any) {
+    const supabase = getSupabaseClient()
     if (!supabase) {
-      console.log('本地模式：不保存数据库')
-      return null
+      console.error('❌ Supabase 客户端未初始化')
+      throw new Error('数据库连接失败')
     }
     try {
       const { data: result, error } = await supabase
@@ -57,18 +58,20 @@ export const cases = {
         .single()
       
       if (error) {
-        console.warn('Supabase 保存失败:', error.message)
-        return null
+        console.error('Supabase 保存失败:', error.message)
+        throw new Error(error.message)
       }
+      console.log('✅ 案例保存成功:', result.id)
       return result
-    } catch (err) {
-      console.warn('Supabase 不可用')
-      return null
+    } catch (err: any) {
+      console.error('Supabase 异常:', err)
+      throw err
     }
   },
 
   // 查询所有案例
   async findAll(limit = 100) {
+    const supabase = getSupabaseClient()
     if (!supabase) return []
     const { data, error } = await supabase
       .from('cases')
@@ -85,6 +88,7 @@ export const cases = {
 
   // 查询单个案例
   async findById(id: string) {
+    const supabase = getSupabaseClient()
     if (!supabase) return null
     const { data, error } = await supabase
       .from('cases')
@@ -101,6 +105,7 @@ export const cases = {
 
   // 更新案例
   async update(id: string, data: any) {
+    const supabase = getSupabaseClient()
     if (!supabase) return null
     const { data: result, error } = await supabase
       .from('cases')
@@ -118,6 +123,7 @@ export const cases = {
 
   // 查询相似案例（修复版）
   async findSimilar(cpu: string, gpu: string, limit = 5) {
+    const supabase = getSupabaseClient()
     if (!supabase) return []
     try {
       // 构建模糊查询条件
@@ -142,6 +148,7 @@ export const cases = {
 
   // 搜索案例（新增）
   async search(query: string, limit = 20) {
+    const supabase = getSupabaseClient()
     if (!supabase) return []
     try {
       const { data, error } = await supabase
@@ -160,6 +167,7 @@ export const cases = {
 
   // 统计（修复版）
   async getStats() {
+    const supabase = getSupabaseClient()
     if (!supabase) {
       return {
         total: 0,
