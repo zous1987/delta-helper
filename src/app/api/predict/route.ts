@@ -7,19 +7,28 @@ import { NextRequest, NextResponse } from 'next/server'
 const gpuDatabase: Record<string, { fps1080p: number; tier: string }> = {
   // 旗舰级 (400+ FPS)
   'RTX 4090': { fps1080p: 500, tier: 'flagship' },
+  'RTX 4090D': { fps1080p: 480, tier: 'flagship' },
   'RTX 4080': { fps1080p: 420, tier: 'flagship' },
+  'RTX 4080 Super': { fps1080p: 430, tier: 'flagship' },
+  'RTX 5090': { fps1080p: 600, tier: 'flagship' },
+  'RTX 5080': { fps1080p: 520, tier: 'flagship' },
+  
+  // 高端 (200-400 FPS)
+  'RTX 4070 Ti Super': { fps1080p: 370, tier: 'high' },
   'RTX 4070 Ti': { fps1080p: 350, tier: 'high' },
   'RTX 3080 Ti': { fps1080p: 340, tier: 'high' },
   'RTX 3080': { fps1080p: 320, tier: 'high' },
-  
-  // 高端 (200-400 FPS)
+  'RTX 4070 Super': { fps1080p: 310, tier: 'high' },
   'RTX 4070': { fps1080p: 280, tier: 'high' },
+  'RTX 5070 Ti': { fps1080p: 380, tier: 'high' },
+  'RTX 5070': { fps1080p: 320, tier: 'high' },
   'RTX 4060 Ti': { fps1080p: 240, tier: 'high' },
   'RTX 3070 Ti': { fps1080p: 260, tier: 'high' },
   'RTX 3070': { fps1080p: 240, tier: 'high' },
   'RTX 3060 Ti': { fps1080p: 200, tier: 'high' },
   'RX 7800 XT': { fps1080p: 280, tier: 'high' },
   'RX 7700 XT': { fps1080p: 240, tier: 'high' },
+  'RX 6750 XT': { fps1080p: 220, tier: 'high' },
   
   // 中端 (120-200 FPS)
   'RTX 4060': { fps1080p: 180, tier: 'mid' },
@@ -31,6 +40,9 @@ const gpuDatabase: Record<string, { fps1080p: number; tier: string }> = {
   'GTX 1660': { fps1080p: 120, tier: 'mid' },
   'RX 6600 XT': { fps1080p: 170, tier: 'mid' },
   'RX 6600': { fps1080p: 150, tier: 'mid' },
+  'RX 6650 XT': { fps1080p: 165, tier: 'mid' },
+  'RTX 3050': { fps1080p: 130, tier: 'mid' },
+  'RTX 2060 Super': { fps1080p: 155, tier: 'mid' },
   
   // 入门 (60-120 FPS)
   'GTX 1650 Super': { fps1080p: 110, tier: 'entry' },
@@ -41,6 +53,7 @@ const gpuDatabase: Record<string, { fps1080p: number; tier: string }> = {
   'GTX 1050': { fps1080p: 60, tier: 'entry' },
   'RX 6500 XT': { fps1080p: 100, tier: 'entry' },
   'RX 6400': { fps1080p: 80, tier: 'entry' },
+  'GTX 1030': { fps1080p: 45, tier: 'entry' },
   
   // 老旧 (<60 FPS)
   'GTX 960': { fps1080p: 50, tier: 'legacy' },
@@ -56,20 +69,38 @@ const gpuDatabase: Record<string, { fps1080p: number; tier: string }> = {
 const cpuDatabase: Record<string, { multiplier: number; tier: string }> = {
   // 旗舰级 (1.0+)
   'i9-14900K': { multiplier: 1.0, tier: 'flagship' },
+  'i9-14900KS': { multiplier: 1.0, tier: 'flagship' },
   'i9-13900K': { multiplier: 1.0, tier: 'flagship' },
+  'i9-13900KS': { multiplier: 1.0, tier: 'flagship' },
   'R9 7950X': { multiplier: 1.0, tier: 'flagship' },
+  'R9 7950X3D': { multiplier: 1.0, tier: 'flagship' },
   'R9 7900X': { multiplier: 1.0, tier: 'flagship' },
+  'R9 7900X3D': { multiplier: 1.0, tier: 'flagship' },
   'i7-14700K': { multiplier: 1.0, tier: 'flagship' },
+  'i7-14700KF': { multiplier: 1.0, tier: 'flagship' },
   'i7-13700K': { multiplier: 1.0, tier: 'flagship' },
+  'i7-13700KF': { multiplier: 1.0, tier: 'flagship' },
   'R7 7800X3D': { multiplier: 1.0, tier: 'flagship' },
+  'R7 9800X3D': { multiplier: 1.0, tier: 'flagship' },
+  'R7 9700X': { multiplier: 0.98, tier: 'flagship' },
+  'i9-12900K': { multiplier: 0.98, tier: 'flagship' },
+  'i9-12900KF': { multiplier: 0.98, tier: 'flagship' },
   
   // 高端 (0.9-1.0)
   'i7-12700K': { multiplier: 0.95, tier: 'high' },
+  'i7-12700KF': { multiplier: 0.95, tier: 'high' },
   'i5-13600K': { multiplier: 0.95, tier: 'high' },
+  'i5-13600KF': { multiplier: 0.95, tier: 'high' },
   'i5-12600K': { multiplier: 0.9, tier: 'high' },
+  'i5-12600KF': { multiplier: 0.9, tier: 'high' },
   'R7 5800X': { multiplier: 0.9, tier: 'high' },
+  'R7 5800X3D': { multiplier: 0.92, tier: 'high' },
   'R7 5700X': { multiplier: 0.88, tier: 'high' },
+  'R7 5700X3D': { multiplier: 0.9, tier: 'high' },
   'i5-14400': { multiplier: 0.88, tier: 'high' },
+  'i5-14400F': { multiplier: 0.88, tier: 'high' },
+  'i5-14500': { multiplier: 0.9, tier: 'high' },
+  'R5 7600X': { multiplier: 0.9, tier: 'high' },
   
   // 中端 (0.75-0.9)
   'i5-12400F': { multiplier: 0.85, tier: 'mid' },
