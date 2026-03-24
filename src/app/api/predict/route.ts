@@ -208,7 +208,7 @@ function findCpuData(cpu: string): { multiplier: number; tier: string; matched: 
 
 /**
  * 预测性能（基于天梯榜数据）
- * 返回：1080P 低画质下的最高帧率
+ * 返回：根据分辨率和刷新率预测帧率
  */
 function predictPerformance(config: {
   cpu: string | null
@@ -216,6 +216,8 @@ function predictPerformance(config: {
   ram: string | null
   deviceType?: '台式机' | '笔记本'
   monitor?: string | null
+  resolution?: string | null
+  refreshRate?: string | null
 }) {
   const gpuData = findGpuData(config.gpu || '')
   const cpuData = findCpuData(config.cpu || '')
@@ -226,8 +228,19 @@ function predictPerformance(config: {
   
   const isLaptop = config.deviceType === '笔记本'
   
+  // 解析分辨率（默认 1080P）
+  const resolution = config.resolution || config.monitor || ''
+  let resolutionMultiplier = 1.0
+  if (resolution.toUpperCase().includes('4K') || resolution.toUpperCase().includes('2160P')) {
+    resolutionMultiplier = 0.5  // 4K 性能需求翻倍
+  } else if (resolution.toUpperCase().includes('2.5K') || resolution.toUpperCase().includes('1440P') || resolution.toUpperCase().includes('2K')) {
+    resolutionMultiplier = 0.7  // 2K 性能需求增加 30%
+  } else if (resolution.toUpperCase().includes('1080P') || resolution.toUpperCase().includes('FHD')) {
+    resolutionMultiplier = 1.0  // 1080P 基准
+  }
+  
   // 基础帧率（GPU 1080P 低画质）- 上浮 20% 更接近实际
-  const baseFps = (gpuData?.fps1080p || 60) * 1.2
+  const baseFps = (gpuData?.fps1080p || 60) * 1.2 * resolutionMultiplier
   
   // CPU 瓶颈系数 - 放宽到 0.85（原 0.7）
   const cpuMultiplier = cpuData?.multiplier ? Math.max(cpuData.multiplier, 0.85) : 0.85
@@ -273,6 +286,12 @@ function predictPerformance(config: {
   if (isLaptop) {
     reason += '（笔记本）'
   }
+  
+  // 添加分辨率信息
+  const resText = resolutionMultiplier === 1.0 ? '1080P' :
+                  resolutionMultiplier === 0.7 ? '2K' :
+                  resolutionMultiplier === 0.5 ? '4K' : '1080P'
+  reason += `（${resText}分辨率）`
   
   if (ramGB >= 16) {
     reason += `，${ramGB}GB 内存充足`
@@ -322,12 +341,14 @@ ${config.text}
 {
   "cpu": "CPU 型号",
   "gpu": "显卡型号",
-  "ram": "内存容量",
+  "ram": "内存容量（如：16GB）",
   "storage": "硬盘信息",
-  "monitor": "显示器信息"
+  "monitor": "显示器信息（如有）",
+  "resolution": "分辨率（如：1080P/2K/4K，如有）",
+  "refreshRate": "刷新率（如：144Hz/165Hz，如有）"
 }
 
-只返回 JSON，不要其他内容。`
+只返回 JSON，不要其他内容。如果某些信息不存在，返回空字符串。`
 
       const response = await fetch(API_URL, {
         method: 'POST',
