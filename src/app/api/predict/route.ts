@@ -195,25 +195,25 @@ function predictPerformance(config: {
   
   const isLaptop = config.deviceType === '笔记本'
   
-  // 基础帧率（GPU 1080P 低画质）
-  const baseFps = gpuData?.fps1080p || 60
+  // 基础帧率（GPU 1080P 低画质）- 上浮 20% 更接近实际
+  const baseFps = (gpuData?.fps1080p || 60) * 1.2
   
-  // CPU 瓶颈系数
-  const cpuMultiplier = cpuData?.multiplier || 0.7
+  // CPU 瓶颈系数 - 放宽到 0.85（原 0.7）
+  const cpuMultiplier = cpuData?.multiplier ? Math.max(cpuData.multiplier, 0.85) : 0.85
   
   // 计算实际帧率
   let predictedFps = baseFps * cpuMultiplier
   
-  // 笔记本降效（70-80%）
+  // 笔记本降效（80-90%，原 70-80%）
   if (isLaptop) {
-    predictedFps *= 0.75
+    predictedFps *= 0.85
   }
   
-  // 内存不足降效
+  // 内存不足降效 - 温和一些
   if (ramGB < 8) {
-    predictedFps *= 0.7
+    predictedFps *= 0.8
   } else if (ramGB < 16) {
-    predictedFps *= 0.9
+    predictedFps *= 0.95
   }
   
   // 四舍五入到 5 的倍数
@@ -225,9 +225,9 @@ function predictPerformance(config: {
   // 判断是否需要优化（144 FPS 以上为理想状态）
   const needsOptimization = predictedFps < 144
   
-  // 生成 FPS 范围（±10%）
-  const fpsMin = Math.round(predictedFps * 0.9 / 5) * 5
-  const fpsMax = Math.round(predictedFps * 1.1 / 5) * 5
+  // 生成 FPS 范围（+5% 到 +15%，更乐观）
+  const fpsMin = Math.round(predictedFps * 0.95 / 5) * 5
+  const fpsMax = Math.round(predictedFps * 1.15 / 5) * 5
   
   // 生成理由
   const gpuName = gpuData?.matched || config.gpu || '未知 GPU'
