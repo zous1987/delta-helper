@@ -279,9 +279,9 @@ export async function POST(request: NextRequest) {
 
     if (type === 'analyze') {
       // 配置识别 - 使用 AI
-      const API_KEY = process.env.QWEN_API_KEY
-      const API_URL = process.env.QWEN_API_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
-      const MODEL = process.env.QWEN_MODEL || 'qwen-coder-plus'
+      const API_KEY = 'sk-f91f45ae3234443e8e83217e8f379cda'
+      const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
+      const MODEL = 'qwen-coder-plus'
 
       const prompt = `从以下文本中提取硬件配置信息，返回 JSON 格式：
 
