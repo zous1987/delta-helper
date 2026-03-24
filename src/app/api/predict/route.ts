@@ -239,6 +239,20 @@ function predictPerformance(config: {
     resolutionMultiplier = 1.0  // 1080P 基准
   }
   
+  // 解析刷新率
+  const refreshRate = config.refreshRate || ''
+  let refreshRateNum = 0
+  const refreshMatch = refreshRate.match(/(\d+)\s*Hz/i)
+  if (refreshMatch) {
+    refreshRateNum = parseInt(refreshMatch[1])
+  } else if (resolution.toUpperCase().includes('144HZ')) {
+    refreshRateNum = 144
+  } else if (resolution.toUpperCase().includes('165HZ')) {
+    refreshRateNum = 165
+  } else if (resolution.toUpperCase().includes('240HZ')) {
+    refreshRateNum = 240
+  }
+  
   // 基础帧率（GPU 1080P 低画质）- 上浮 20% 更接近实际
   const baseFps = (gpuData?.fps1080p || 60) * 1.2 * resolutionMultiplier
   
@@ -273,6 +287,18 @@ function predictPerformance(config: {
   const fpsMin = Math.round(predictedFps * 0.95 / 5) * 5
   const fpsMax = Math.round(predictedFps * 1.15 / 5) * 5
   
+  // 刷新率匹配建议
+  let refreshAdvice = ''
+  if (refreshRateNum > 0) {
+    if (fpsMax >= refreshRateNum) {
+      refreshAdvice = `，可跑满${refreshRateNum}Hz 刷新率`
+    } else if (fpsMax >= refreshRateNum * 0.8) {
+      refreshAdvice = `，接近跑满${refreshRateNum}Hz 刷新率`
+    } else {
+      refreshAdvice = `，无法完全发挥${refreshRateNum}Hz 刷新率`
+    }
+  }
+  
   // 生成理由
   const gpuName = gpuData?.matched || config.gpu || '未知 GPU'
   const cpuName = cpuData?.matched || config.cpu || '未知 CPU'
@@ -292,6 +318,11 @@ function predictPerformance(config: {
                   resolutionMultiplier === 0.7 ? '2K' :
                   resolutionMultiplier === 0.5 ? '4K' : '1080P'
   reason += `（${resText}分辨率）`
+  
+  // 添加刷新率建议
+  if (refreshAdvice) {
+    reason += refreshAdvice
+  }
   
   if (ramGB >= 16) {
     reason += `，${ramGB}GB 内存充足`
