@@ -19,7 +19,7 @@ export default function Home() {
   
   // 显示器参数
   const [resolution, setResolution] = useState('')
-  const [refreshRate, setRefreshRate] = useState('')
+  const [refreshRate, setRefreshRate] = useState('')  // 前端保持驼峰
   
   // 状态
   const [loading, setLoading] = useState(false)
@@ -104,7 +104,7 @@ export default function Home() {
         storage: config.storage,
         monitor: config.monitor,
         resolution: resolution || config.resolution,
-        refreshRate: refreshRate || config.refreshRate,
+        refresh_rate: refreshRate || config.refreshRate,  // 数据库字段用下划线
         device_type: deviceType,
         predicted_fps: prediction.predicted_fps,
         can_run: prediction.can_run,
