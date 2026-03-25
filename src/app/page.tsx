@@ -17,6 +17,10 @@ export default function Home() {
   const [prediction, setPrediction] = useState<any>(null)
   const [similarCases, setSimilarCases] = useState<any[]>([])
   
+  // 显示器参数
+  const [resolution, setResolution] = useState('')
+  const [refreshRate, setRefreshRate] = useState('')
+  
   // 状态
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -34,10 +38,15 @@ export default function Home() {
     setConfig(null)
     setPrediction(null)
     setSimilarCases([])
+    setResolution('')
+    setRefreshRate('')
 
     try {
       const config = await analyzeHardwareConfig(inputText)
       setConfig(config)
+      // 如果 AI 识别出了分辨率和刷新率，自动填充
+      if (config.resolution) setResolution(config.resolution)
+      if (config.refreshRate) setRefreshRate(config.refreshRate)
       setStep(2)
     } catch (err: any) {
       setError(err.message || '识别失败，请重试')
@@ -54,10 +63,12 @@ export default function Home() {
     setError('')
 
     try {
-      // 1. 先获取预测结果（包含设备类型）
+      // 1. 先获取预测结果（包含设备类型、分辨率、刷新率）
       const prediction = await predictGamePerformance({
         ...config,
-        deviceType
+        deviceType,
+        resolution: resolution || config.resolution,
+        refreshRate: refreshRate || config.refreshRate
       })
       setPrediction(prediction)
 
@@ -92,6 +103,8 @@ export default function Home() {
         ram: config.ram,
         storage: config.storage,
         monitor: config.monitor,
+        resolution: resolution || config.resolution,
+        refreshRate: refreshRate || config.refreshRate,
         device_type: deviceType,
         predicted_fps: prediction.predicted_fps,
         can_run: prediction.can_run,
@@ -107,6 +120,8 @@ export default function Home() {
       setCustomerSource('')
       setDeviceType('台式机')
       setInputText('')
+      setResolution('')
+      setRefreshRate('')
       setConfig(null)
       setPrediction(null)
       setStep(1)
@@ -299,6 +314,44 @@ export default function Home() {
                   </div>
                 </div>
               )}
+
+              {/* 分辨率和刷新率输入框 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    分辨率 <span className="text-gray-400 text-xs">(选填)</span>
+                  </label>
+                  <select
+                    value={resolution}
+                    onChange={(e) => setResolution(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">自动识别</option>
+                    <option value="1080P">1080P (FHD)</option>
+                    <option value="2K">2K (1440P)</option>
+                    <option value="4K">4K (2160P)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    刷新率 <span className="text-gray-400 text-xs">(选填)</span>
+                  </label>
+                  <select
+                    value={refreshRate}
+                    onChange={(e) => setRefreshRate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">自动识别</option>
+                    <option value="60Hz">60Hz</option>
+                    <option value="75Hz">75Hz</option>
+                    <option value="144Hz">144Hz</option>
+                    <option value="165Hz">165Hz</option>
+                    <option value="240Hz">240Hz</option>
+                    <option value="360Hz">360Hz</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div className="flex space-x-4 mt-6">
